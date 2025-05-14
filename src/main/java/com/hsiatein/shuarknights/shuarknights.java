@@ -53,7 +53,7 @@ public class shuarknights
     // Creates a new food item with the id "shuarknights:example_id", nutrition 1 and saturation 2
     public static final RegistryObject<Item> EXAMPLE_ITEM = ITEMS.register("example_item", () -> new Item(new Item.Properties().food(new FoodProperties.Builder()
             .alwaysEat().nutrition(1).saturationMod(2f).build())));
-    public static final RegistryObject<Item> ZHANG_SHU = ITEMS.register("zhangshu", () -> new zhangshu(new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> ZHANG_SHU = ITEMS.register("zhangshu", () -> new zhangshu(new Item.Properties()));
 
     // Creates a creative tab with the id "shuarknights:example_tab" for the example item, that is placed after the combat tab
     public static final RegistryObject<CreativeModeTab> SHU_TAB = CREATIVE_MODE_TABS.register("shu_tab", () -> CreativeModeTab.builder()
