@@ -27,6 +27,8 @@ import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import org.slf4j.Logger;
+import com.hsiatein.shuarknights.item.zhangshu;
+import net.minecraft.world.item.ItemStack;
 
 // The value here should match an entry in the META-INF/mods.toml file
 @Mod(shuarknights.MODID)
@@ -51,17 +53,19 @@ public class shuarknights
     // Creates a new food item with the id "shuarknights:example_id", nutrition 1 and saturation 2
     public static final RegistryObject<Item> EXAMPLE_ITEM = ITEMS.register("example_item", () -> new Item(new Item.Properties().food(new FoodProperties.Builder()
             .alwaysEat().nutrition(1).saturationMod(2f).build())));
+    public static final RegistryObject<Item> ZHANG_SHU = ITEMS.register("zhangshu", () -> new zhangshu(new Item.Properties().stacksTo(1)));
 
     // Creates a creative tab with the id "shuarknights:example_tab" for the example item, that is placed after the combat tab
-    public static final RegistryObject<CreativeModeTab> EXAMPLE_TAB = CREATIVE_MODE_TABS.register("example_tab", () -> CreativeModeTab.builder()
+    public static final RegistryObject<CreativeModeTab> SHU_TAB = CREATIVE_MODE_TABS.register("shu_tab", () -> CreativeModeTab.builder()
             .withTabsBefore(CreativeModeTabs.COMBAT)
-            .icon(() -> EXAMPLE_ITEM.get().getDefaultInstance())
+            .icon(() -> ZHANG_SHU.get().getDefaultInstance())
             .displayItems((parameters, output) -> {
-                output.accept(EXAMPLE_ITEM.get()); // Add the example item to the tab. For your own tabs, this method is preferred over the event
+                output.accept(ZHANG_SHU.get()); // Add the example item to the tab. For your own tabs, this method is preferred over the event
             }).build());
 
     public shuarknights(FMLJavaModLoadingContext context)
     {
+
         IEventBus modEventBus = context.getModEventBus();
 
         // Register the commonSetup method for modloading
