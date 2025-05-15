@@ -1,6 +1,7 @@
 package com.hsiatein.shuarknights.item;
 
 import com.mojang.serialization.Codec;
+import com.hsiatein.shuarknights.utils;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.BlockPos;
@@ -214,7 +215,7 @@ public class yucong extends SwordItem {
                     plantRandomVegetation(world,pos);
                 }
             }else if(aboveState.is(Blocks.GRASS) || aboveState.is(BlockTags.SAPLINGS)){
-                applyBoneMealEffect(world,pos.above());
+                utils.applyBoneMealEffect(world,pos.above());
             }
 
 
@@ -224,7 +225,7 @@ public class yucong extends SwordItem {
                 world.setBlock(pos.above(), Blocks.WHEAT.defaultBlockState(), 3);
             }
             else if(aboveState.is(BlockTags.CROPS)){
-                applyBoneMealEffect(world,pos.above());
+                utils.applyBoneMealEffect(world,pos.above());
             }
 
 
@@ -235,12 +236,12 @@ public class yucong extends SwordItem {
         BlockPos abovePos = pos.above(); // 获取草方块上方的位置
         Random random = new Random();
 
-        int choice = random.nextInt(3); // 生成 0 到 2 之间的随机数
+        int choice = random.nextInt(100); // 生成 0 到 2 之间的随机数
 
-        if (choice == 0) {
+        if (choice <25) {
             // 种植草
             world.setBlock(abovePos, Blocks.GRASS.defaultBlockState(), 3);
-        } else if (choice == 1) {
+        } else if (choice<50) {
 
             // 种植树苗（以橡树为例）
             world.setBlock(abovePos, Blocks.OAK_SAPLING.defaultBlockState(), 3);
@@ -250,18 +251,7 @@ public class yucong extends SwordItem {
         }
     }
 
-    public void applyBoneMealEffect(Level world, BlockPos pos) {
-        BlockState blockState = world.getBlockState(pos);
-        BonemealableBlock bonemealableblock = (BonemealableBlock) blockState.getBlock();
-        if(blockState.getBlock()==Blocks.WHEAT){
-            world.players().get(0).sendSystemMessage(Component.nullToEmpty("Mugi"+pos.toString()));
-        }
-        if (bonemealableblock.isValidBonemealTarget(world, pos, blockState, world.isClientSide)) {
-            if (bonemealableblock.isBonemealSuccess(world, world.random, pos, blockState)) {
-                bonemealableblock.performBonemeal((ServerLevel)world, world.random, pos, blockState);
-            }
-        }
-    }
+
 
 
     @Override
