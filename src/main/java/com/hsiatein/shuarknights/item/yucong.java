@@ -1,5 +1,7 @@
 package com.hsiatein.shuarknights.item;
 
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
@@ -10,14 +12,17 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.level.Level;
-import org.jetbrains.annotations.NotNull;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.List;
 import java.util.Random;
 
-public class zhangshu extends SwordItem {
+public class yucong extends SwordItem {
     public static final int MAX_DRAW_DURATION = 20;
 
-    public zhangshu(Properties properties) {
+    public yucong(Properties properties) {
         super(Tiers.NETHERITE, 5, -2.4F, properties.durability(0));
     }
 
@@ -80,4 +85,15 @@ public class zhangshu extends SwordItem {
 //        }
     }
 
+//    @Override
+//    public void appendHoverText(@NotNull ItemStack itemStack, @Nullable Level level, @NotNull List<Component> components, @NotNull TooltipFlag tooltipFlag) {
+//        if(Screen.hasShiftDown()){
+//            components.add(Component.literal("短暂使用可以恢复生命值, 长时间使用可以把周围环境改造成更适合作物生长的样子, 甚至拥有呼风唤雨的能力.").withStyle(ChatFormatting.AQUA));
+//        }else{
+//            components.add(Component.literal("黍的玉琮, 在黍的手上可以发挥出神奇的效果.").withStyle(ChatFormatting.AQUA));
+//            components.add(Component.literal("按 SHIFT 获得更多信息").withStyle(ChatFormatting.YELLOW));
+//
+//        }
+//        super.appendHoverText(itemStack, level, components, tooltipFlag);
+//    }
 }
