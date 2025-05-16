@@ -62,7 +62,7 @@ public class yucong extends SwordItem {
             // 恢复生命值
             player.addEffect(new MobEffectInstance(MobEffects.HEAL, 1, 1));
             // 提升抗性
-            player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 200, 1)); // 持续 10 秒，抗性等级 1
+            // player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 200, 1)); // 持续 10 秒，抗性等级 1
         }
         //player.releaseUsingItem();
         return super.use(world, player, hand);
@@ -109,18 +109,21 @@ public class yucong extends SwordItem {
             }
         }
 
-        if (!world.isClientSide && useDuration==9){
-            utils.getAllFlowers();
-            // player.sendSystemMessage(Component.nullToEmpty(String.valueOf(utils.ALL_FLOWERS.length)));
-        }else if (!world.isClientSide && useDuration==8){
-            utils.getAllSaplings();
-            // player.sendSystemMessage(Component.nullToEmpty(String.valueOf(utils.ALL_SAPLINGS.length)));
-        }
+//        if (!world.isClientSide && useDuration==9){
+//            utils.getAllFlowers();
+//            // player.sendSystemMessage(Component.nullToEmpty(String.valueOf(utils.ALL_FLOWERS.length)));
+//        }else if (!world.isClientSide && useDuration==8){
+//            utils.getAllSaplings();
+//            // player.sendSystemMessage(Component.nullToEmpty(String.valueOf(utils.ALL_SAPLINGS.length)));
+//        }
         int startTick=10;
-        if (!world.isClientSide && useDuration>=startTick) {
-//            if(useDuration==MAX_CHARGE_DURATION){
-//                player.sendSystemMessage(Component.nullToEmpty("玉琮似乎发生了一点变化"));
-//            }
+        if(!world.isClientSide){
+            if(useDuration<startTick){
+                player.addEffect(new MobEffectInstance(MobEffects.HEAL, 1, 1));
+                if(useDuration==startTick-1) utils.getAllFlowers();
+                else if(useDuration==startTick-2) utils.getAllSaplings();
+                return;
+            }
             int refineTimes=0;
             CompoundTag tag = itemStack.getTag();
             if(useDuration%40==startTick){
@@ -129,11 +132,13 @@ public class yucong extends SwordItem {
                     tag.putInt("refineTimes",refineTimes+1);
                 }
                 BlockPos startPos = player.blockPosition();
-                while(!canTransmit(world,startPos)){
+                while(!utils.canTransmit(world,startPos)){
                     startPos=startPos.below();
                 }
-                refineBlock(world,startPos);
-                RunTime.push(startPos);
+                performOnEveryPos(world,startPos);
+                // RunTime.addEffect(new MobEffectInstance(MobEffects.HEAL, 1, 1));
+                RunTime.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 100*(refineTimes+1), min(refineTimes,4)-1));
+                RunTime.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 100*(refineTimes+1), min(refineTimes,4)-1));
                 RunTime.addExploredTimes(startPos);
             }
             int i = 0;
@@ -144,130 +149,35 @@ public class yucong extends SwordItem {
                 if(utils.discard(refineTimes,RunTime.exploredTimes(u))) continue;
                 ArrayDeque<BlockPos> neighbors = getNeighbors(world, u);
                 for(BlockPos v:neighbors){
-                    refineBlock(world,v);
-                    RunTime.push(v);
+                    performOnEveryPos(world,v);
                 }
                 i++;
             }
-
-            //player.sendSystemMessage(Component.nullToEmpty(playerPos.toString()));
-
         }
+//        if (!world.isClientSide && useDuration>=startTick) {
+//
+//
+//            //player.sendSystemMessage(Component.nullToEmpty(playerPos.toString()));
+//
+//        }
     }
-    private boolean canTransmit(@NotNull Level world,BlockPos pos){
-        BlockState state = world.getBlockState(pos);
-        return !state.canBeReplaced() && !state.is(BlockTags.CROPS) && !state.is(BlockTags.SAPLINGS);
-    }
-    private boolean isValidSuccessor(@NotNull Level world,BlockPos pos){
-        if(!canTransmit(world,pos)) return false;
-        ArrayDeque<BlockPos> neighbors = getNeighbors6(pos);
-        for(BlockPos neighbor:neighbors){
-            if(!canTransmit(world,neighbor)) return true;
-        }
-        return false;
-    }
-    private ArrayDeque<BlockPos> getNeighbors6(BlockPos pos){
-        ArrayDeque<BlockPos> neighbors = new ArrayDeque<>();
-        neighbors.addLast(pos.above());
-        neighbors.addLast(pos.below());
-        neighbors.addLast(pos.west());
-        neighbors.addLast(pos.east());
-        neighbors.addLast(pos.north());
-        neighbors.addLast(pos.south());
-        return neighbors;
-    }
-    private ArrayDeque<BlockPos> getNeighbors26(BlockPos pos){
-        ArrayDeque<BlockPos> neighbors = new ArrayDeque<>();
-        if(pos==null) return neighbors;
-        int[] direction={0,-1,1};
-        for(int i:direction)
-            for(int j:direction)
-                for(int k:direction){
-                    neighbors.addLast(new BlockPos(pos.getX()+i,pos.getY()+j,pos.getZ()+k));
-                }
-        neighbors.pop();
-        return neighbors;
-    }
-    private ArrayDeque<BlockPos> getNeighbors(@NotNull Level world,BlockPos pos){
+
+    private ArrayDeque<BlockPos> getNeighbors(@NotNull Level world, BlockPos pos){
         ArrayDeque<BlockPos> result = new ArrayDeque<>();
-        ArrayDeque<BlockPos> neighbors = getNeighbors26(pos);
+        ArrayDeque<BlockPos> neighbors = utils.getNeighbors26(pos);
         for(BlockPos neighbor:neighbors){
-            if(isValidSuccessor(world,neighbor) && RunTime.exploredTimes(neighbor)<RunTime.exploredTimes(pos)){
+            if(utils.isValidSuccessor(world,neighbor) && yucong.RunTime.exploredTimes(neighbor)< yucong.RunTime.exploredTimes(pos)){
                 result.addLast(neighbor);
-                RunTime.addExploredTimes(neighbor);
+                yucong.RunTime.addExploredTimes(neighbor);
             }
         }
         return result;
     }
-    public void refineBlock(Level world, BlockPos pos) {
-        BlockState currentState = world.getBlockState(pos);
-        BlockState aboveState = world.getBlockState(pos.above());
 
-        if (currentState.is(Blocks.STONE) || currentState.is(Blocks.COBBLESTONE)) {
-            world.setBlock(pos, Blocks.MOSSY_COBBLESTONE.defaultBlockState(), 3);
-        } else if (currentState.is(Blocks.MOSSY_COBBLESTONE)) {
-            world.setBlock(pos, Blocks.MOSS_BLOCK.defaultBlockState(), 3);
-        } else if (currentState.is(Blocks.MOSS_BLOCK)) {
-            if(aboveState.canBeReplaced()){
-                world.setBlock(pos, Blocks.GRASS_BLOCK.defaultBlockState(), 3);
-            }
-            else world.setBlock(pos, Blocks.DIRT.defaultBlockState(), 3);
-        } else if (currentState.is(Blocks.SAND) || currentState.is(Blocks.GRAVEL)) {
-            world.setBlock(pos, Blocks.PODZOL.defaultBlockState(), 3);
-        } else if (currentState.is(Blocks.PODZOL)) {
-            world.setBlock(pos, Blocks.DIRT.defaultBlockState(), 3);
-        } else if (currentState.is(Blocks.DIRT)) {
-            if(aboveState.getBlock()==Blocks.WATER){
-                if(utils.random.nextInt(100) < 5){
-                    world.setBlock(pos.above(), Blocks.SEAGRASS.defaultBlockState(), 3);
-                    world.setBlock(pos.above(), Blocks.KELP.defaultBlockState(), 3);
-                }
-            }else if(aboveState.canBeReplaced()){
-                world.setBlock(pos, Blocks.GRASS_BLOCK.defaultBlockState(), 3);
-            }
-
-        } else if (currentState.is(Blocks.GRASS_BLOCK)) {
-            if(aboveState.isAir()){
-                // 在上面长草或树苗或花
-                if(utils.random.nextInt(100) < 2){
-                    plantRandomVegetation(world,pos);
-                }
-            }else if(aboveState.is(Blocks.GRASS) || aboveState.is(BlockTags.SAPLINGS)){
-                utils.applyBoneMealEffect(world,pos.above());
-            }
-
-
-        } else if (currentState.is(Blocks.FARMLAND)) {
-            if(aboveState.isAir()){
-                // 替换为播种后的耕地
-                world.setBlock(pos.above(), Blocks.WHEAT.defaultBlockState(), 3);
-            }
-            else if(aboveState.is(BlockTags.CROPS)){
-                utils.applyBoneMealEffect(world,pos.above());
-            }
-
-
-
-        }
-    }
-    public void plantRandomVegetation(Level world, BlockPos pos) {
-        BlockPos abovePos = pos.above(); // 获取草方块上方的位置
-        Random random = new Random();
-
-        int choice = random.nextInt(100); // 生成 0 到 2 之间的随机数
-
-        if (choice <20) {
-            // 种植草
-            world.setBlock(abovePos, Blocks.GRASS.defaultBlockState(), 3);
-        } else if (choice<50) {
-            // 种植树苗（以橡树为例）
-            utils.plantRandomSaplings(world,pos);
-            // world.setBlock(abovePos, Blocks.OAK_SAPLING.defaultBlockState(), 3);
-        } else {
-            // 种植花（以红花为例）
-            utils.plantRandomFlower(world,pos);
-            // world.setBlock(abovePos, Blocks.POPPY.defaultBlockState(), 3);
-        }
+    private void performOnEveryPos(Level world, BlockPos pos){
+        utils.refineBlock(world,pos);
+        RunTime.pushCreature(world,pos);
+        RunTime.push(pos);
     }
 
 
@@ -324,9 +234,18 @@ public class yucong extends SwordItem {
     static class RunTime{
         private static final ArrayDeque<BlockPos> openList = new ArrayDeque<>();
         private static final HashMap<BlockPos, Integer> explored = new HashMap<>();
+        private static final ArrayDeque<LivingEntity> creatureList = new ArrayDeque<>();
         // private static final ArrayDeque<BlockPos> neighborsList = new ArrayDeque<>();
         public static void push(BlockPos pos){
             openList.addLast(pos);
+        }
+        public static void pushCreature(Level world, BlockPos pos){
+            creatureList.addAll(utils.getAllCreatures(world,pos));
+        }
+        public static void addEffect(MobEffectInstance mobEffectInstance){
+            for(LivingEntity e:creatureList){
+                e.addEffect(mobEffectInstance);
+            }
         }
         public static void pushAll(ArrayDeque<BlockPos> allPos){
             openList.addAll(allPos);
@@ -337,6 +256,7 @@ public class yucong extends SwordItem {
         public static void clear(){
             openList.clear();
             explored.clear();
+            creatureList.clear();
         }
         public static boolean isEmpty(){
             return openList.isEmpty();
