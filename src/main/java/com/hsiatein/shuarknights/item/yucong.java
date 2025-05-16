@@ -38,7 +38,6 @@ public class yucong extends SwordItem {
     public static final int MAX_CHARGE_DURATION = 100;
     private static ArrayDeque<BlockPos> closeList = new ArrayDeque<>();
     private static final int MAX_EXPAND_TIMES = 200;
-    private static final Random random = new Random();
 
 
     public yucong(Properties properties) {
@@ -83,7 +82,7 @@ public class yucong extends SwordItem {
                 // player.sendSystemMessage(Component.nullToEmpty("雨->晴"));
             } else {
                 // 如果是晴天，变为雨天
-                ((ServerLevel) world).setWeatherParameters(0, 12000, true, random.nextInt(100) < 20);
+                ((ServerLevel) world).setWeatherParameters(0, 12000, true, utils.random.nextInt(100) < 20);
                 // player.sendSystemMessage(Component.nullToEmpty("晴->雨"));
             }
         }
@@ -108,6 +107,13 @@ public class yucong extends SwordItem {
             }
         }
         int startTick=10;
+        if (!world.isClientSide && useDuration==0){
+            utils.getAllFlowers();
+            // player.sendSystemMessage(Component.nullToEmpty(String.valueOf(utils.ALL_FLOWERS.length)));
+        }else if (!world.isClientSide && useDuration==8){
+            utils.getAllSaplings();
+            // player.sendSystemMessage(Component.nullToEmpty(String.valueOf(utils.ALL_SAPLINGS.length)));
+        }
         if (!world.isClientSide && useDuration>=startTick) {
 
 //            if(useDuration==MAX_CHARGE_DURATION){
@@ -200,7 +206,7 @@ public class yucong extends SwordItem {
             world.setBlock(pos, Blocks.DIRT.defaultBlockState(), 3);
         } else if (currentState.is(Blocks.DIRT)) {
             if(aboveState.getBlock()==Blocks.WATER){
-                if(random.nextInt(100) < 5){
+                if(utils.random.nextInt(100) < 5){
                     world.setBlock(pos.above(), Blocks.SEAGRASS.defaultBlockState(), 3);
                     world.setBlock(pos.above(), Blocks.KELP.defaultBlockState(), 3);
                 }
@@ -211,7 +217,7 @@ public class yucong extends SwordItem {
         } else if (currentState.is(Blocks.GRASS_BLOCK)) {
             if(aboveState.isAir()){
                 // 在上面长草或树苗或花
-                if(random.nextInt(100) < 5){
+                if(utils.random.nextInt(100) < 2){
                     plantRandomVegetation(world,pos);
                 }
             }else if(aboveState.is(Blocks.GRASS) || aboveState.is(BlockTags.SAPLINGS)){
@@ -238,16 +244,17 @@ public class yucong extends SwordItem {
 
         int choice = random.nextInt(100); // 生成 0 到 2 之间的随机数
 
-        if (choice <25) {
+        if (choice <20) {
             // 种植草
             world.setBlock(abovePos, Blocks.GRASS.defaultBlockState(), 3);
         } else if (choice<50) {
-
             // 种植树苗（以橡树为例）
-            world.setBlock(abovePos, Blocks.OAK_SAPLING.defaultBlockState(), 3);
+            utils.plantRandomSaplings(world,pos);
+            // world.setBlock(abovePos, Blocks.OAK_SAPLING.defaultBlockState(), 3);
         } else {
             // 种植花（以红花为例）
-            world.setBlock(abovePos, Blocks.POPPY.defaultBlockState(), 3);
+            utils.plantRandomFlower(world,pos);
+            // world.setBlock(abovePos, Blocks.POPPY.defaultBlockState(), 3);
         }
     }
 
