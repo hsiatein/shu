@@ -49,6 +49,7 @@ public class yucong extends SwordItem {
         ItemStack itemStack = new ItemStack(this);
         CompoundTag tag = new CompoundTag();
         tag.putInt("useDuration", 0); // 设置默认 useDuration
+        tag.putInt("refineTimes", 0);
         itemStack.setTag(tag); // 应用标签到 ItemStack
         return itemStack;
     }
@@ -94,6 +95,7 @@ public class yucong extends SwordItem {
         CompoundTag tag = stack.getTag();
         if (tag != null) {
             tag.putInt("useDuration", 0);
+            tag.putInt("refineTimes", 0);
         }
         RunTime.clear();
     }
@@ -106,21 +108,26 @@ public class yucong extends SwordItem {
                 tag.putInt("useDuration", useDuration);
             }
         }
-        int startTick=10;
-        if (!world.isClientSide && useDuration==0){
+
+        if (!world.isClientSide && useDuration==9){
             utils.getAllFlowers();
             // player.sendSystemMessage(Component.nullToEmpty(String.valueOf(utils.ALL_FLOWERS.length)));
         }else if (!world.isClientSide && useDuration==8){
             utils.getAllSaplings();
             // player.sendSystemMessage(Component.nullToEmpty(String.valueOf(utils.ALL_SAPLINGS.length)));
         }
+        int startTick=10;
         if (!world.isClientSide && useDuration>=startTick) {
-
 //            if(useDuration==MAX_CHARGE_DURATION){
 //                player.sendSystemMessage(Component.nullToEmpty("玉琮似乎发生了一点变化"));
 //            }
-
+            int refineTimes=0;
+            CompoundTag tag = itemStack.getTag();
             if(useDuration%40==startTick){
+                if (tag != null) {
+                    refineTimes = tag.getInt("refineTimes");
+                    tag.putInt("refineTimes",refineTimes+1);
+                }
                 BlockPos startPos = player.blockPosition();
                 while(!canTransmit(world,startPos)){
                     startPos=startPos.below();
@@ -129,15 +136,20 @@ public class yucong extends SwordItem {
                 RunTime.push(startPos);
                 RunTime.addExploredTimes(startPos);
             }
-            for(int i=0;i<MAX_EXPAND_TIMES;i++){
+            int i = 0;
+            if (tag != null) refineTimes = tag.getInt("refineTimes");
+
+            while (i<MAX_EXPAND_TIMES && !RunTime.isEmpty()){
                 BlockPos u= RunTime.pop();
+                if(utils.discard(refineTimes,RunTime.exploredTimes(u))) continue;
                 ArrayDeque<BlockPos> neighbors = getNeighbors(world, u);
                 for(BlockPos v:neighbors){
                     refineBlock(world,v);
                     RunTime.push(v);
                 }
-
+                i++;
             }
+
             //player.sendSystemMessage(Component.nullToEmpty(playerPos.toString()));
 
         }

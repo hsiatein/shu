@@ -20,12 +20,21 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Random;
-
+import java.lang.Math;
 
 public class utils {
     public static Block[] ALL_FLOWERS={};
     public static Block[] ALL_SAPLINGS={};
     public static Random random = new Random();
+
+    public static boolean discard(int refineTimes, int exploredTimes){
+        if(refineTimes == exploredTimes) return false;
+        else if (refineTimes > exploredTimes) {
+            double reserveProb=Math.pow(2,exploredTimes-refineTimes)*Math.pow(1.4,exploredTimes-1);
+            return random.nextDouble()>reserveProb;
+        }
+        else return true;
+    }
 
     public static ArrayDeque<Block> getBlocksByTag(TagKey<Block> blockTag) {
         ArrayDeque<Block> result = new ArrayDeque<>();
@@ -62,7 +71,7 @@ public class utils {
             if(flower.defaultBlockState().is(Blocks.WITHER_ROSE)) continue;
             result.add(flower);
         }
-        ALL_FLOWERS=allFlowers.toArray(new Block[0]);
+        ALL_FLOWERS=result.toArray(new Block[0]);
     }
     public static void getAllSaplings() {
         if(ALL_SAPLINGS.length>0) return;
