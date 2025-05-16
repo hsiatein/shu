@@ -1,6 +1,5 @@
 package com.hsiatein.shuarknights.item;
 
-import com.mojang.serialization.Codec;
 import com.hsiatein.shuarknights.utils;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.screens.Screen;
@@ -8,7 +7,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.tags.BlockTags;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.*;
@@ -19,25 +17,22 @@ import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.level.Level;
 
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.BonemealableBlock;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.levelgen.feature.TreeFeature;
-import net.minecraft.world.level.levelgen.feature.configurations.TreeConfiguration;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.event.entity.living.LivingEvent;
+import net.minecraftforge.event.entity.living.LivingHurtEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
-import static net.minecraft.resources.ResourceLocation.fromNamespaceAndPath;
 import static org.apache.commons.lang3.math.NumberUtils.min;
 
 public class yucong extends SwordItem {
     public static final int MAX_CHARGE_DURATION = 100;
     private static ArrayDeque<BlockPos> closeList = new ArrayDeque<>();
     private static final int MAX_EXPAND_TIMES = 200;
+    private static final int START_TICK = 10;
+
 
 
     public yucong(Properties properties) {
@@ -50,19 +45,19 @@ public class yucong extends SwordItem {
         CompoundTag tag = new CompoundTag();
         tag.putInt("useDuration", 0); // 设置默认 useDuration
         tag.putInt("refineTimes", 0);
+        tag.putInt("coolDown", 0);
         itemStack.setTag(tag); // 应用标签到 ItemStack
         return itemStack;
     }
 
+
     @Override
     public @NotNull InteractionResultHolder<ItemStack> use(Level world, @NotNull Player player, @NotNull InteractionHand hand) {
-        player.startUsingItem(hand);
         if (!world.isClientSide) {
-
+            player.startUsingItem(hand);
             // 恢复生命值
-            player.addEffect(new MobEffectInstance(MobEffects.HEAL, 1, 1));
+            // player.addEffect(new MobEffectInstance(MobEffects.HEAL, 1, 1));
             // 提升抗性
-            // player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 200, 1)); // 持续 10 秒，抗性等级 1
         }
         //player.releaseUsingItem();
         return super.use(world, player, hand);
@@ -71,8 +66,8 @@ public class yucong extends SwordItem {
     @Override
     public void releaseUsing(@NotNull ItemStack itemStack, @NotNull Level world, @NotNull LivingEntity player, int remainTime) {
         int useDuration = this.getUseDuration(itemStack) - remainTime;
-
-        if (!world.isClientSide && useDuration >= 100) {
+        // player.sendSystemMessage(Component.nullToEmpty(player.getLookAngle().toString()));
+        if (!world.isClientSide && useDuration >= 100 && player.getLookAngle().y>0.75 && !player.isShiftKeyDown()) {
             // player.sendSystemMessage(Component.nullToEmpty(String.valueOf(useDuration)));
 
             // 判断蓄力时间
@@ -116,17 +111,16 @@ public class yucong extends SwordItem {
 //            utils.getAllSaplings();
 //            // player.sendSystemMessage(Component.nullToEmpty(String.valueOf(utils.ALL_SAPLINGS.length)));
 //        }
-        int startTick=10;
-        if(!world.isClientSide){
-            if(useDuration<startTick){
+        if(!world.isClientSide && player.isShiftKeyDown()){
+            if(useDuration< START_TICK){
                 player.addEffect(new MobEffectInstance(MobEffects.HEAL, 1, 1));
-                if(useDuration==startTick-1) utils.getAllFlowers();
-                else if(useDuration==startTick-2) utils.getAllSaplings();
+                if(useDuration== START_TICK -1) utils.getAllFlowers();
+                else if(useDuration== START_TICK -2) utils.getAllSaplings();
                 return;
             }
             int refineTimes=0;
             CompoundTag tag = itemStack.getTag();
-            if(useDuration%40==startTick){
+            if(useDuration%40== START_TICK){
                 if (tag != null) {
                     refineTimes = tag.getInt("refineTimes");
                     tag.putInt("refineTimes",refineTimes+1);
@@ -206,8 +200,14 @@ public class yucong extends SwordItem {
         return Mth.hsvToRgb(0.2023F, 0.5628F, 0.7176F);
     }
     @Override
-    public @NotNull UseAnim getUseAnimation(@NotNull ItemStack p_41452_) {
-        return UseAnim.BOW;
+    public @NotNull UseAnim getUseAnimation(@NotNull ItemStack itemStack) {
+        CompoundTag tag = itemStack.getTag();
+        int useDuration=0;
+        if (tag != null) {
+            useDuration = tag.getInt("useDuration");
+        }
+        if(useDuration< START_TICK) return UseAnim.BLOCK;
+        else return UseAnim.BOW;
     }
     @Override
     public boolean shouldCauseReequipAnimation(ItemStack oldStack, ItemStack newStack, boolean slotChanged) {
@@ -244,11 +244,8 @@ public class yucong extends SwordItem {
         }
         public static void addEffect(MobEffectInstance mobEffectInstance){
             for(LivingEntity e:creatureList){
-                e.addEffect(mobEffectInstance);
+                if(e.isAlive()) e.addEffect(mobEffectInstance);
             }
-        }
-        public static void pushAll(ArrayDeque<BlockPos> allPos){
-            openList.addAll(allPos);
         }
         public static BlockPos pop(){
             return openList.pollFirst();

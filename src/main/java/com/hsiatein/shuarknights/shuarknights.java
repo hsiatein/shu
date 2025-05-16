@@ -1,5 +1,6 @@
 package com.hsiatein.shuarknights;
 
+import com.hsiatein.shuarknights.network.ModMessages;
 import com.mojang.logging.LogUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.registries.Registries;
@@ -85,6 +86,7 @@ public class shuarknights
 
         // Register our mod's ForgeConfigSpec so that Forge can create and load the config file for us
         context.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
+
     }
 
     private void commonSetup(final FMLCommonSetupEvent event)
@@ -98,6 +100,9 @@ public class shuarknights
         LOGGER.info(Config.magicNumberIntroduction + Config.magicNumber);
 
         Config.items.forEach((item) -> LOGGER.info("ITEM >> {}", item.toString()));
+
+        ModMessages.register();
+
     }
 
     // Add the example block item to the building blocks tab

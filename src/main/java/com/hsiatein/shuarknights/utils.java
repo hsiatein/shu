@@ -64,8 +64,8 @@ public class utils {
             }
             else world.setBlock(pos, Blocks.DIRT.defaultBlockState(), 3);
         } else if (currentState.is(Blocks.SAND) || currentState.is(Blocks.GRAVEL)) {
-            world.setBlock(pos, Blocks.PODZOL.defaultBlockState(), 3);
-        } else if (currentState.is(Blocks.PODZOL)) {
+            world.setBlock(pos, Blocks.COARSE_DIRT.defaultBlockState(), 3);
+        } else if (currentState.is(Blocks.COARSE_DIRT)) {
             world.setBlock(pos, Blocks.DIRT.defaultBlockState(), 3);
         } else if (currentState.is(Blocks.DIRT)) {
             if(aboveState.getBlock()==Blocks.WATER){
