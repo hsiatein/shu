@@ -1,5 +1,6 @@
 package com.hsiatein.shuarknights;
 
+import com.hsiatein.shuarknights.hud.shu_skill_one;
 import com.hsiatein.shuarknights.network.ModMessages;
 import com.mojang.logging.LogUtils;
 import net.minecraft.client.Minecraft;
@@ -14,9 +15,11 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
+import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -120,10 +123,17 @@ public class shuarknights
         LOGGER.info("HELLO from server starting");
     }
 
+
     // You can use EventBusSubscriber to automatically register all static methods in the class annotated with @SubscribeEvent
     @Mod.EventBusSubscriber(modid = MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
     public static class ClientModEvents
     {
+        @SubscribeEvent
+        public static void registerOverlay(RegisterGuiOverlaysEvent event) {
+            utils.Logger.log("render");
+            event.registerAboveAll("shu_skill_one", new shu_skill_one());
+        }
+
         @SubscribeEvent
         public static void onClientSetup(FMLClientSetupEvent event)
         {
@@ -131,5 +141,8 @@ public class shuarknights
             LOGGER.info("HELLO FROM CLIENT SETUP");
             LOGGER.info("MINECRAFT NAME >> {}", Minecraft.getInstance().getUser().getName());
         }
+
+
+
     }
 }
