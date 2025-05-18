@@ -8,10 +8,12 @@ import com.hsiatein.shuarknights.network.ModMessages;
 import com.hsiatein.shuarknights.network.SwingMsg;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.level.LevelEvent;
@@ -20,8 +22,9 @@ import net.minecraftforge.fml.LogicalSide;
 import net.minecraftforge.fml.common.Mod;
 
 import java.util.ArrayDeque;
+import java.util.HashSet;
+import java.util.Set;
 
-import static com.hsiatein.shuarknights.hud.samsara.*;
 import static org.apache.commons.lang3.math.NumberUtils.min;
 
 @Mod.EventBusSubscriber(modid = shuarknights.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
@@ -50,33 +53,88 @@ public class EventHandler {
     public static void samsara(TickEvent.PlayerTickEvent event) {
         if(event.side == LogicalSide.CLIENT) return;
         if(event.phase == TickEvent.Phase.END) return;
-        if(DURATION>=MAX_DURATION){
+        if(samsara.DURATION>=samsara.MAX_DURATION){
             samsara_runtime.clear();
-            refineTimes=0;
+            samsara.refineTimes=0;
             return;
         }
-        if(world==null || startPos==null) return;
+        if(samsara.world==null || samsara.startPos==null) return;
 
-        if(DURATION%40== 0){
-            refineTimes++;
-            utils.performOnEveryPos(world,startPos);
-            samsara_runtime.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 2*MAX_DURATION- DURATION, 0));
-            samsara_runtime.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 2*MAX_DURATION- DURATION, 0));
-            samsara_runtime.addExploredTimes(startPos);
+        if(samsara.DURATION%40== 0){
+            samsara.refineTimes++;
+            utils.performOnEveryPos(samsara.world,samsara.startPos);
+            samsara_runtime.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 2*samsara.MAX_DURATION- samsara.DURATION, 0));
+            samsara_runtime.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 2*samsara.MAX_DURATION- samsara.DURATION, 0));
+            samsara_runtime.addExploredTimes(samsara.startPos);
         }
         int i = 0;
 
-        while (i<MAX_EXPAND_TIMES && !samsara_runtime.isEmpty()){
+        while (i<samsara.MAX_EXPAND_TIMES && !samsara_runtime.isEmpty()){
             BlockPos u= samsara_runtime.pop();
-            if(utils.discard(refineTimes, samsara_runtime.exploredTimes(u))) continue;
-            ArrayDeque<BlockPos> neighbors = utils.getNeighbors(world, u);
+            if(utils.discard(samsara.refineTimes, samsara_runtime.exploredTimes(u))) continue;
+            ArrayDeque<BlockPos> neighbors = samsara_runtime.getNeighbors(samsara.world, u);
             for(BlockPos v:neighbors){
-                utils.performOnEveryPos(world,v);
+                utils.performOnEveryPos(samsara.world,v);
             }
             i++;
         }
         samsara_runtime.transmitEnemy();
-        DURATION++;
+        samsara.DURATION++;
+    }
+
+    @SubscribeEvent
+    public static void bountiful_harvest(TickEvent.PlayerTickEvent event) {
+        if(event.side == LogicalSide.CLIENT) return;
+        if(event.phase == TickEvent.Phase.END) return;
+        if(bountiful_harvest.DURATION>=bountiful_harvest.MAX_DURATION){
+            bountiful_harvest_runtime.clear();
+            return;
+        }
+        if(bountiful_harvest.world==null || bountiful_harvest.startPos==null) return;
+
+        if(bountiful_harvest.DURATION== 0){
+            bountiful_harvest_runtime.push(bountiful_harvest.startPos);
+        }
+
+        int i = 0;
+        while (i<bountiful_harvest.MAX_EXPAND_TIMES && !bountiful_harvest_runtime.isEmpty()){
+            BlockPos u= bountiful_harvest_runtime.pop();
+            ArrayDeque<BlockPos> neighbors = bountiful_harvest_runtime.getNeighbors(bountiful_harvest.world, u);
+            for(BlockPos v:neighbors){
+                if(bountiful_harvest_runtime.exploredOperate(v)!=bountiful_harvest_runtime.operate.no) continue;
+                bountiful_harvest_runtime.expandPos(bountiful_harvest.world,v);
+                bountiful_harvest_runtime.push(v);
+            }
+            i++;
+        }
+        if(bountiful_harvest.DURATION%10==0){
+            var blocks = new HashSet<>(bountiful_harvest_runtime.getExploredSet());
+            for(var block:blocks){
+                if(bountiful_harvest_runtime.exploredOperate(block)==bountiful_harvest_runtime.operate.explored
+                        || bountiful_harvest_runtime.exploredOperate(block)==bountiful_harvest_runtime.operate.operated){
+                    bountiful_harvest_runtime.markOperated(block);
+                    continue;
+                }
+                if(bountiful_harvest_runtime.exploredOperate(block)==bountiful_harvest_runtime.operate.wood){
+                    bountiful_harvest.world.setBlock(block, Blocks.OAK_WOOD.defaultBlockState(),3);
+                    continue;
+                }
+                if(bountiful_harvest_runtime.exploredOperate(block)==bountiful_harvest_runtime.operate.water){
+                    bountiful_harvest.world.setBlock(block, Blocks.WATER.defaultBlockState(),3);
+                    continue;
+                }
+                if(bountiful_harvest_runtime.exploredOperate(block)==bountiful_harvest_runtime.operate.farmland){
+                    var aboveState=bountiful_harvest.world.getBlockState(block.above());
+                    if(!bountiful_harvest.world.getBlockState(block).is(Blocks.FARMLAND)) bountiful_harvest.world.setBlock(block, Blocks.FARMLAND.defaultBlockState(),3);
+                    else if (!aboveState.is(BlockTags.CROPS)) bountiful_harvest.world.setBlock(block.above(), Blocks.WHEAT.defaultBlockState(),3);
+                    else {
+                        if (aboveState.getValue(net.minecraft.world.level.block.CropBlock.AGE)<7) utils.applyBoneMealEffect(bountiful_harvest.world,block.above());
+                        if (utils.isCropMature(bountiful_harvest.world,block.above())) bountiful_harvest_runtime.markOperated(block);
+                    }
+                }
+            }
+        }
+        bountiful_harvest.DURATION++;
     }
 
     @SubscribeEvent
@@ -100,7 +158,9 @@ public class EventHandler {
         utils.getAllFlowers();
         utils.getAllSaplings();
         samsara.SP= samsara.INITIAL_SP;
-        DURATION= MAX_DURATION;
+        samsara.DURATION= samsara.MAX_DURATION;
+        bountiful_harvest.SP= bountiful_harvest.INITIAL_SP;
+        bountiful_harvest.DURATION= bountiful_harvest.MAX_DURATION;
     }
 
     @SubscribeEvent

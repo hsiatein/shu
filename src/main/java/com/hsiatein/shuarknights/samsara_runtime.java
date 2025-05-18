@@ -5,6 +5,7 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayDeque;
 import java.util.HashMap;
@@ -74,5 +75,15 @@ public class samsara_runtime {
     public static void addExploredTimes(BlockPos pos){
         explored.put(pos,exploredTimes(pos)+1);
     }
-
+    public static ArrayDeque<BlockPos> getNeighbors(@NotNull Level world, BlockPos pos){
+        ArrayDeque<BlockPos> result = new ArrayDeque<>();
+        ArrayDeque<BlockPos> neighbors = utils.getNeighbors26(pos);
+        for(BlockPos neighbor:neighbors){
+            if(utils.isValidSuccessor(world,neighbor) && samsara_runtime.exploredTimes(neighbor)< samsara_runtime.exploredTimes(pos)){
+                result.addLast(neighbor);
+                samsara_runtime.addExploredTimes(neighbor);
+            }
+        }
+        return result;
+    }
 }

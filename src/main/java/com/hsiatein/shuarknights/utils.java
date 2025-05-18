@@ -33,19 +33,8 @@ public class utils {
     public static Block[] ALL_SAPLINGS={};
     public static Random random = new Random();
 
-    public static ArrayDeque<BlockPos> getNeighbors(@NotNull Level world, BlockPos pos){
-        ArrayDeque<BlockPos> result = new ArrayDeque<>();
-        ArrayDeque<BlockPos> neighbors = utils.getNeighbors26(pos);
-        for(BlockPos neighbor:neighbors){
-            if(utils.isValidSuccessor(world,neighbor) && samsara_runtime.exploredTimes(neighbor)< samsara_runtime.exploredTimes(pos)){
-                result.addLast(neighbor);
-                samsara_runtime.addExploredTimes(neighbor);
-            }
-        }
-        return result;
-    }
 
-    public static ArrayDeque<BlockPos> getNeighborsWithoutRuntime(@NotNull Level world, BlockPos pos){
+    public static ArrayDeque<BlockPos> getNeighbors(@NotNull Level world, BlockPos pos){
         ArrayDeque<BlockPos> result = new ArrayDeque<>();
         ArrayDeque<BlockPos> neighbors = utils.getNeighbors26(pos);
         for(BlockPos neighbor:neighbors){
@@ -78,7 +67,7 @@ public class utils {
             Logger.log("expand:"+i);
             BlockPos u= openList.pop();
             closeList.add(u);
-            ArrayDeque<BlockPos> neighbors = getNeighborsWithoutRuntime(world, u);
+            ArrayDeque<BlockPos> neighbors = getNeighbors(world, u);
             Logger.log(String.valueOf(neighbors.size()));
             for(BlockPos v:neighbors){
                 if(closeList.contains(v)) continue;
@@ -182,8 +171,6 @@ public class utils {
                 utils.applyBoneMealEffect(world,pos.above());
             }
 
-
-
         }
     }
 
@@ -219,6 +206,22 @@ public class utils {
                 bonemealableblock.performBonemeal((ServerLevel)world, world.random, pos, blockState);
             }
         }
+    }
+    public static boolean isCropMature(Level world, BlockPos pos) {
+        BlockState state = world.getBlockState(pos);
+
+        // 检查是否是作物块
+        if (state.getBlock() == Blocks.WHEAT) {
+            return state.getValue(net.minecraft.world.level.block.CropBlock.AGE) == 7;
+        } else if (state.getBlock() == Blocks.CARROTS) {
+            return state.getValue(net.minecraft.world.level.block.CropBlock.AGE) == 7;
+        } else if (state.getBlock() == Blocks.POTATOES) {
+            return state.getValue(net.minecraft.world.level.block.CropBlock.AGE) == 7;
+        } else if (state.getBlock() == Blocks.BEETROOTS) {
+            return state.getValue(net.minecraft.world.level.block.CropBlock.AGE) == 3; // 甜菜最大年龄为 3
+        }
+
+        return false; // 不是作物块或尚未成熟
     }
     public static void getAllFlowers() {
         if(ALL_FLOWERS.length>0) return;
@@ -283,10 +286,43 @@ public class utils {
         }
         return false;
     }
+    public static boolean isValidFarmland(@NotNull Level world,BlockPos pos){
+        if(!world.getBlockState(pos).is(BlockTags.DIRT)) return false;
+        return world.getBlockState(pos.above()).isAir();
+    }
+
+    public static boolean isBound(@NotNull Level world,BlockPos pos){
+        if(!canTransmit(world,pos)) throw new RuntimeException("这里是非实体方块");
+        ArrayDeque<BlockPos> neighbors = getNeighbors6(pos);
+        for(BlockPos neighbor:neighbors){
+            if(!canTransmit(world,neighbor)) return true;
+        }
+        return false;
+    }
+
     public static ArrayDeque<BlockPos> getNeighbors6(BlockPos pos){
         ArrayDeque<BlockPos> neighbors = new ArrayDeque<>();
         neighbors.addLast(pos.above());
         neighbors.addLast(pos.below());
+        neighbors.addLast(pos.west());
+        neighbors.addLast(pos.east());
+        neighbors.addLast(pos.north());
+        neighbors.addLast(pos.south());
+        return neighbors;
+    }
+    public static ArrayDeque<BlockPos> getNeighbors8(BlockPos pos){
+        ArrayDeque<BlockPos> neighbors = new ArrayDeque<>();
+        if(pos==null) return neighbors;
+        int[] direction={0,-1,1};
+        for(int i:direction)
+            for(int j:direction)
+                neighbors.addLast(new BlockPos(pos.getX()+i,pos.getY(),pos.getZ()+j));
+        neighbors.pop();
+        return neighbors;
+    }
+
+    public static ArrayDeque<BlockPos> getNeighbors4(BlockPos pos){
+        ArrayDeque<BlockPos> neighbors = new ArrayDeque<>();
         neighbors.addLast(pos.west());
         neighbors.addLast(pos.east());
         neighbors.addLast(pos.north());

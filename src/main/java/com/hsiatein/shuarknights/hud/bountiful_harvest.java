@@ -6,8 +6,10 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import net.minecraftforge.client.gui.overlay.ForgeGui;
 import net.minecraftforge.client.gui.overlay.IGuiOverlay;
 
@@ -19,13 +21,22 @@ public class bountiful_harvest implements IGuiOverlay  {
     private static final ResourceLocation ICON = fromNamespaceAndPath(shuarknights.MODID,"textures/hud/bountiful_harvest.png");
     public static int CHARGES = 0;
     public static final int MAX_CHARGE =1;
-    public static int SP = 20*20;
+    public static int SP = 0;
+    public static final int INITIAL_SP =20*20;
     public static final int MAX_SP =25;
     public static boolean DISPLAY = false;
     public static final int DX = 0;
     public static final int DY =48;
+    public static final int MAX_DURATION = 25*20;
+
+    public static int DURATION = MAX_DURATION;
+    public static final int MAX_EXPAND_TIMES = 200;
+    public static BlockPos startPos = null;
+    public static Level world=null;
+
     public static void recoverSP(ItemStack heldItem){
         DISPLAY=heldItem.getItem() instanceof yucong;
+        if(DURATION!=MAX_DURATION) return;
         if (CHARGES<MAX_CHARGE){
             SP++;
         }
