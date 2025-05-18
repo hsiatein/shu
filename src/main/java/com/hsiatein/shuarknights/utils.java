@@ -1,11 +1,11 @@
 package com.hsiatein.shuarknights;
 
-import com.hsiatein.shuarknights.item.yucong;
-import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.TagKey;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.player.Player;
@@ -17,24 +17,95 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.lang.Math;
 import java.util.stream.Collectors;
+
+import static com.hsiatein.shuarknights.hud.samsara.MAX_EXPAND_TIMES;
 
 public class utils {
     public static Block[] ALL_FLOWERS={};
     public static Block[] ALL_SAPLINGS={};
     public static Random random = new Random();
+
+    public static ArrayDeque<BlockPos> getNeighbors(@NotNull Level world, BlockPos pos){
+        ArrayDeque<BlockPos> result = new ArrayDeque<>();
+        ArrayDeque<BlockPos> neighbors = utils.getNeighbors26(pos);
+        for(BlockPos neighbor:neighbors){
+            if(utils.isValidSuccessor(world,neighbor) && samsara_runtime.exploredTimes(neighbor)< samsara_runtime.exploredTimes(pos)){
+                result.addLast(neighbor);
+                samsara_runtime.addExploredTimes(neighbor);
+            }
+        }
+        return result;
+    }
+
+    public static ArrayDeque<BlockPos> getNeighborsWithoutRuntime(@NotNull Level world, BlockPos pos){
+        ArrayDeque<BlockPos> result = new ArrayDeque<>();
+        ArrayDeque<BlockPos> neighbors = utils.getNeighbors26(pos);
+        for(BlockPos neighbor:neighbors){
+            if(utils.isValidSuccessor(world,neighbor)){
+                result.addLast(neighbor);
+            }
+        }
+        return result;
+    }
+
+    public static void performOnEveryPos(Level world, BlockPos pos){
+        utils.refineBlock(world,pos);
+        samsara_runtime.pushCreature(world,pos);
+        samsara_runtime.pushEnemy(world,pos);
+        samsara_runtime.push(pos);
+    }
+
+    public static void refineBlocks(Level world,BlockPos startPos){
+        while (!canTransmit(world,startPos) && startPos.getY()>-64){
+            startPos=startPos.below();
+        }
+        ArrayDeque<BlockPos> openList = new ArrayDeque<>();
+        refineBlock(world,startPos);
+        HashSet<LivingEntity> creatureSet = new HashSet<>(getAllCreatures(world, startPos));
+        HashSet<BlockPos> closeList = new HashSet<>();
+        openList.addLast(startPos);
+
+        int i = 0;
+        while(i<MAX_EXPAND_TIMES && !openList.isEmpty()){
+            Logger.log("expand:"+i);
+            BlockPos u= openList.pop();
+            closeList.add(u);
+            ArrayDeque<BlockPos> neighbors = getNeighborsWithoutRuntime(world, u);
+            Logger.log(String.valueOf(neighbors.size()));
+            for(BlockPos v:neighbors){
+                if(closeList.contains(v)) continue;
+                Logger.log("refineBlock:");
+                refineBlock(world,v);
+                Logger.log("getAllCreatures:");
+                var blockCreatures=getAllCreatures(world, v);
+                Logger.log("addCreatures:");
+                creatureSet.addAll(blockCreatures);
+                Logger.log("creatureSet:");
+                Logger.log(String.valueOf(creatureSet.size()));
+                Logger.log(creatureSet.toString());
+                openList.addLast(v);
+                Logger.log("openList:");
+                Logger.log(String.valueOf(openList.size()));
+                Logger.log(openList.toString());
+            }
+            i++;
+        }
+
+        for(var e:creatureSet){
+            if(!e.isAlive()) continue;
+            e.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 20*10, 0));
+            e.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 20*10, 0));
+        }
+
+    }
 
     public static List<LivingEntity> getAllCreatures(@NotNull Level world, BlockPos pos){
         // 获取方块上方的坐标
@@ -45,6 +116,20 @@ public class utils {
                         new AABB(aboveBlockPos).inflate(1.0D, 2.0D, 1.0D))
                 .stream()
                 .filter(entity -> entity.getClassification(false) == MobCategory.CREATURE || entity instanceof Player)
+                .collect(Collectors.toList());
+
+        return result;
+    }
+
+    public static List<LivingEntity> getAllEnemy(@NotNull Level world, BlockPos pos){
+        // 获取方块上方的坐标
+        BlockPos aboveBlockPos = pos.above();
+        List<LivingEntity> result =new ArrayList<>();
+        if(!world.getBlockState(aboveBlockPos).isAir()) return result;
+        result=world.getEntitiesOfClass(LivingEntity.class,
+                        new AABB(aboveBlockPos).inflate(1.0D, 2.0D, 1.0D))
+                .stream()
+                .filter(entity -> entity.getClassification(false) == MobCategory.MONSTER)
                 .collect(Collectors.toList());
 
         return result;
@@ -103,9 +188,10 @@ public class utils {
     }
 
     public static boolean discard(int refineTimes, int exploredTimes){
+        if (refineTimes>6) return true;
         if(refineTimes == exploredTimes) return false;
         else if (refineTimes > exploredTimes) {
-            double reserveProb=Math.pow(2,exploredTimes-refineTimes)*Math.pow(1.4,exploredTimes-1);
+            double reserveProb=Math.pow(1.8,exploredTimes-refineTimes)*Math.pow(1.4,exploredTimes-1);
             return random.nextDouble()>reserveProb;
         }
         else return true;
@@ -116,10 +202,6 @@ public class utils {
         var blocks=ForgeRegistries.BLOCKS.getValues();
         Logger.log(String.valueOf((blocks.size())));
         for(Block block:blocks){
-//            if(blockTag==BlockTags.FLOWERS){
-//                Logger.log(block.toString());
-//
-//            }
             if(block.defaultBlockState().is(blockTag)) result.add(block);
         }
         return result;

@@ -1,6 +1,8 @@
 package com.hsiatein.shuarknights;
 
-import com.hsiatein.shuarknights.hud.shu_skill_one;
+import com.hsiatein.shuarknights.hud.bountiful_harvest;
+import com.hsiatein.shuarknights.hud.samsara;
+import com.hsiatein.shuarknights.hud.verdant_wisdom;
 import com.hsiatein.shuarknights.network.ModMessages;
 import com.mojang.logging.LogUtils;
 import net.minecraft.client.Minecraft;
@@ -19,7 +21,6 @@ import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -56,14 +57,14 @@ public class shuarknights
     // Creates a new food item with the id "shuarknights:example_id", nutrition 1 and saturation 2
     public static final RegistryObject<Item> EXAMPLE_ITEM = ITEMS.register("example_item", () -> new Item(new Item.Properties().food(new FoodProperties.Builder()
             .alwaysEat().nutrition(1).saturationMod(2f).build())));
-    public static final RegistryObject<Item> ZHANG_SHU = ITEMS.register("yucong", () -> new yucong(new Item.Properties()));
+    public static final RegistryObject<Item> YU_CONG = ITEMS.register("yucong", () -> new yucong(new Item.Properties()));
 
     // Creates a creative tab with the id "shuarknights:example_tab" for the example item, that is placed after the combat tab
     public static final RegistryObject<CreativeModeTab> SHU_TAB = CREATIVE_MODE_TABS.register("shu_tab", () -> CreativeModeTab.builder()
             .withTabsBefore(CreativeModeTabs.COMBAT)
-            .icon(() -> ZHANG_SHU.get().getDefaultInstance())
+            .icon(() -> YU_CONG.get().getDefaultInstance())
             .displayItems((parameters, output) -> {
-                output.accept(ZHANG_SHU.get()); // Add the example item to the tab. For your own tabs, this method is preferred over the event
+                output.accept(YU_CONG.get()); // Add the example item to the tab. For your own tabs, this method is preferred over the event
             }).build());
 
     public shuarknights(FMLJavaModLoadingContext context)
@@ -130,8 +131,10 @@ public class shuarknights
     {
         @SubscribeEvent
         public static void registerOverlay(RegisterGuiOverlaysEvent event) {
-            utils.Logger.log("render");
-            event.registerAboveAll("shu_skill_one", new shu_skill_one());
+            // utils.Logger.log("render");
+            event.registerAboveAll("shuarknights_verdant_wisdom", new verdant_wisdom());
+            event.registerAboveAll("shuarknights_bountiful_harvest", new bountiful_harvest());
+            event.registerAboveAll("shuarknights_samsara", new samsara());
         }
 
         @SubscribeEvent

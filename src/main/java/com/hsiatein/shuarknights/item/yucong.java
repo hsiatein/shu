@@ -1,13 +1,14 @@
 package com.hsiatein.shuarknights.item;
 
+import com.hsiatein.shuarknights.hud.samsara;
 import com.hsiatein.shuarknights.utils;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.*;
 import net.minecraft.world.entity.player.Player;
@@ -17,27 +18,26 @@ import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.level.Level;
 
-import net.minecraftforge.event.entity.living.LivingEvent;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.lang.Math;
 
 import static org.apache.commons.lang3.math.NumberUtils.min;
 
 public class yucong extends SwordItem {
     public static final int MAX_CHARGE_DURATION = 100;
-    private static ArrayDeque<BlockPos> closeList = new ArrayDeque<>();
     private static final int MAX_EXPAND_TIMES = 200;
     private static final int START_TICK = 10;
 
 
 
     public yucong(Properties properties) {
-        super(Tiers.NETHERITE, 5, -2.4F, properties.durability(0));
+        super(Tiers.NETHERITE, 5, -2.4F, properties.durability(0).fireResistant());
     }
+
+
 
     @Override
     public @NotNull ItemStack getDefaultInstance() {
@@ -61,6 +61,15 @@ public class yucong extends SwordItem {
         }
         //player.releaseUsingItem();
         return super.use(world, player, hand);
+    }
+
+    @Override
+    public boolean onLeftClickEntity(ItemStack stack, Player player, Entity entity)
+    {
+        if(samsara.DURATION<samsara.MAX_DURATION){
+            player.addEffect(new MobEffectInstance(MobEffects.HEAL, 1, 1));
+        }
+        return false;
     }
 
     @Override
@@ -92,7 +101,7 @@ public class yucong extends SwordItem {
             tag.putInt("useDuration", 0);
             tag.putInt("refineTimes", 0);
         }
-        RunTime.clear();
+        // RunTime.clear();
     }
     @Override
     public void onUseTick(@NotNull Level world, @NotNull LivingEntity player, @NotNull ItemStack itemStack, int remainTime) {
@@ -104,78 +113,72 @@ public class yucong extends SwordItem {
             }
         }
 
-//        if (!world.isClientSide && useDuration==9){
-//            utils.getAllFlowers();
-//            // player.sendSystemMessage(Component.nullToEmpty(String.valueOf(utils.ALL_FLOWERS.length)));
-//        }else if (!world.isClientSide && useDuration==8){
-//            utils.getAllSaplings();
-//            // player.sendSystemMessage(Component.nullToEmpty(String.valueOf(utils.ALL_SAPLINGS.length)));
-//        }
         if(!world.isClientSide && player.isShiftKeyDown()){
             if(useDuration< START_TICK){
-                player.addEffect(new MobEffectInstance(MobEffects.HEAL, 1, 1));
-                if(useDuration== START_TICK -1) utils.getAllFlowers();
-                else if(useDuration== START_TICK -2) utils.getAllSaplings();
+                // player.addEffect(new MobEffectInstance(MobEffects.HEAL, 1, 1));
                 return;
             }
-            int refineTimes=0;
-            CompoundTag tag = itemStack.getTag();
-            if(useDuration%40== START_TICK){
-                if (tag != null) {
-                    refineTimes = tag.getInt("refineTimes");
-                    tag.putInt("refineTimes",refineTimes+1);
-                }
-                BlockPos startPos = player.blockPosition();
-                while(!utils.canTransmit(world,startPos)){
-                    startPos=startPos.below();
-                }
-                performOnEveryPos(world,startPos);
-                // RunTime.addEffect(new MobEffectInstance(MobEffects.HEAL, 1, 1));
-                RunTime.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 100*(refineTimes+1), min(refineTimes,4)-1));
-                RunTime.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 100*(refineTimes+1), min(refineTimes,4)-1));
-                RunTime.addExploredTimes(startPos);
+            if(samsara.CHARGES<=0) return;
+            samsara.startPos=player.blockPosition();
+            while (!utils.canTransmit(world,samsara.startPos) && samsara.startPos.getY()>-64){
+                samsara.startPos=samsara.startPos.below();
             }
-            int i = 0;
-            if (tag != null) refineTimes = tag.getInt("refineTimes");
-
-            while (i<MAX_EXPAND_TIMES && !RunTime.isEmpty()){
-                BlockPos u= RunTime.pop();
-                if(utils.discard(refineTimes,RunTime.exploredTimes(u))) continue;
-                ArrayDeque<BlockPos> neighbors = getNeighbors(world, u);
-                for(BlockPos v:neighbors){
-                    performOnEveryPos(world,v);
-                }
-                i++;
-            }
+            samsara.world=world;
+            samsara.CHARGES--;
+            samsara.DURATION=0;
         }
-//        if (!world.isClientSide && useDuration>=startTick) {
-//
-//
-//            //player.sendSystemMessage(Component.nullToEmpty(playerPos.toString()));
-//
+    }
+
+
+//    @Override
+//    public void onUseTick(@NotNull Level world, @NotNull LivingEntity player, @NotNull ItemStack itemStack, int remainTime) {
+//        int useDuration=this.getUseDuration(itemStack)-remainTime;
+//        if((useDuration<MAX_CHARGE_DURATION && useDuration%8==0)||useDuration==MAX_CHARGE_DURATION){
+//            CompoundTag tag = itemStack.getTag();
+//            if (tag != null) {
+//                tag.putInt("useDuration", useDuration);
+//            }
 //        }
-    }
-
-    private ArrayDeque<BlockPos> getNeighbors(@NotNull Level world, BlockPos pos){
-        ArrayDeque<BlockPos> result = new ArrayDeque<>();
-        ArrayDeque<BlockPos> neighbors = utils.getNeighbors26(pos);
-        for(BlockPos neighbor:neighbors){
-            if(utils.isValidSuccessor(world,neighbor) && yucong.RunTime.exploredTimes(neighbor)< yucong.RunTime.exploredTimes(pos)){
-                result.addLast(neighbor);
-                yucong.RunTime.addExploredTimes(neighbor);
-            }
-        }
-        return result;
-    }
-
-    private void performOnEveryPos(Level world, BlockPos pos){
-        utils.refineBlock(world,pos);
-        RunTime.pushCreature(world,pos);
-        RunTime.push(pos);
-    }
-
-
-
+//
+//        if(!world.isClientSide && player.isShiftKeyDown()){
+//            if(useDuration< START_TICK){
+//                player.addEffect(new MobEffectInstance(MobEffects.HEAL, 1, 1));
+//                if(useDuration== START_TICK -1) utils.getAllFlowers();
+//                else if(useDuration== START_TICK -2) utils.getAllSaplings();
+//                return;
+//            }
+//            int refineTimes=0;
+//            CompoundTag tag = itemStack.getTag();
+//            if(useDuration%40== START_TICK){
+//                if (tag != null) {
+//                    refineTimes = tag.getInt("refineTimes");
+//                    tag.putInt("refineTimes",refineTimes+1);
+//                }
+//                BlockPos startPos = player.blockPosition();
+//                while(!utils.canTransmit(world,startPos)){
+//                    startPos=startPos.below();
+//                }
+//                utils.performOnEveryPos(world,startPos);
+//                // RunTime.addEffect(new MobEffectInstance(MobEffects.HEAL, 1, 1));
+//                RunTime.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 100*(refineTimes+1), min(refineTimes,4)-1));
+//                RunTime.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 100*(refineTimes+1), min(refineTimes,4)-1));
+//                RunTime.addExploredTimes(startPos);
+//            }
+//            int i = 0;
+//            if (tag != null) refineTimes = tag.getInt("refineTimes");
+//
+//            while (i<MAX_EXPAND_TIMES && !RunTime.isEmpty()){
+//                BlockPos u= RunTime.pop();
+//                if(utils.discard(refineTimes,RunTime.exploredTimes(u))) continue;
+//                ArrayDeque<BlockPos> neighbors = utils.getNeighbors(world, u);
+//                for(BlockPos v:neighbors){
+//                    utils.performOnEveryPos(world,v);
+//                }
+//                i++;
+//            }
+//            RunTime.transmitEnemy();
+//        }
+//    }
 
     @Override
     public boolean isBarVisible(@NotNull ItemStack itemStack) {
@@ -231,40 +234,5 @@ public class yucong extends SwordItem {
     }
 
 
-    static class RunTime{
-        private static final ArrayDeque<BlockPos> openList = new ArrayDeque<>();
-        private static final HashMap<BlockPos, Integer> explored = new HashMap<>();
-        private static final ArrayDeque<LivingEntity> creatureList = new ArrayDeque<>();
-        // private static final ArrayDeque<BlockPos> neighborsList = new ArrayDeque<>();
-        public static void push(BlockPos pos){
-            openList.addLast(pos);
-        }
-        public static void pushCreature(Level world, BlockPos pos){
-            creatureList.addAll(utils.getAllCreatures(world,pos));
-        }
-        public static void addEffect(MobEffectInstance mobEffectInstance){
-            for(LivingEntity e:creatureList){
-                if(e.isAlive()) e.addEffect(mobEffectInstance);
-            }
-        }
-        public static BlockPos pop(){
-            return openList.pollFirst();
-        }
-        public static void clear(){
-            openList.clear();
-            explored.clear();
-            creatureList.clear();
-        }
-        public static boolean isEmpty(){
-            return openList.isEmpty();
-        }
-        public static int exploredTimes(BlockPos pos){
-            if(explored.get(pos)==null) return 0;
-            else return explored.get(pos);
-        }
-        public static void addExploredTimes(BlockPos pos){
-            explored.put(pos,exploredTimes(pos)+1);
-        }
 
-    }
 }
