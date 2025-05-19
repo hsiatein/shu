@@ -3,6 +3,8 @@ package com.hsiatein.shuarknights.runtime;
 import com.hsiatein.shuarknights.utils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.NotNull;
 
@@ -18,12 +20,16 @@ public class bountiful_harvest_runtime {
     private static final ArrayDeque<BlockPos> openList = new ArrayDeque<>();
     private static final HashMap<BlockPos, operate> explored = new HashMap<>();
     // private static final HashMap<BlockPos, BlockPos> unionFindSet = new HashMap<>();
+    private static final HashSet<LivingEntity> creatureSet = new HashSet<>();
     private static final HashSet<BlockPos> operated = new HashSet<>();
 
     public static void push(BlockPos pos){
         openList.addLast(pos);
     }
-
+    public static void pushCreature(Level world, BlockPos pos){
+        var entities= utils.getAllCreatures(world,pos);
+        creatureSet.addAll(entities);
+    }
     public static BlockPos pop(){
         return openList.pollFirst();
     }
@@ -65,7 +71,8 @@ public class bountiful_harvest_runtime {
 
     public static void expandPos(@NotNull Level world, BlockPos pos){
         if(!canTransmit(world,pos) || canTransmit(world,pos.above())) explored.put(pos,operate.explored);
-        else if(utils.isBound(world,pos)) explored.put(pos,operate.wood);
+        else if(utils.isBound(world,pos) && utils.isFarmlandBound(world,pos)) explored.put(pos,operate.wood);
+        else if(utils.isBound(world,pos)) explored.put(pos,operate.explored);
         else if(utils.isValidFarmland(world,pos)) explored.put(pos,operate.farmland);
         else explored.put(pos,operate.explored);
 

@@ -97,6 +97,13 @@ public class utils {
         }
 
     }
+    public static void addEffect(MobEffectInstance mobEffectInstance,Level world,BlockPos pos){
+        var entities=utils.getAllCreatures(world,pos);
+        for(LivingEntity e:entities){
+            if(!e.isAlive()) continue;
+            e.addEffect(mobEffectInstance);
+        }
+    }
 
     public static List<LivingEntity> getAllCreatures(@NotNull Level world, BlockPos pos){
         // 获取方块上方的坐标
@@ -105,6 +112,16 @@ public class utils {
         if(!world.getBlockState(aboveBlockPos).isAir()) return result;
         result=world.getEntitiesOfClass(LivingEntity.class,
                         new AABB(aboveBlockPos).inflate(1.0D, 2.0D, 1.0D))
+                .stream()
+                .filter(entity -> entity.getClassification(false) == MobCategory.CREATURE || entity instanceof Player)
+                .collect(Collectors.toList());
+
+        return result;
+    }
+
+    public static List<LivingEntity> getAllCreatures(@NotNull Level world,Player player, double range) {
+        List<LivingEntity> result=world.getEntitiesOfClass(LivingEntity.class,
+                        new AABB(player.blockPosition()).inflate(range, range, range))
                 .stream()
                 .filter(entity -> entity.getClassification(false) == MobCategory.CREATURE || entity instanceof Player)
                 .collect(Collectors.toList());
@@ -306,7 +323,7 @@ public class utils {
         if(!isBound(world, pos)) throw new RuntimeException("这里不是边界");
         ArrayDeque<BlockPos> neighbors = getNeighbors8(pos);
         for(BlockPos neighbor:neighbors){
-            if(bountiful_harvest_runtime.exploredOperate(neighbor)==bountiful_harvest_runtime.operate.farmland) return true;
+            if(world.getBlockState(neighbor).is(BlockTags.DIRT) && !isBound(world,neighbor) && !canTransmit(world, neighbor.above())) return true;
         }
         return false;
     }

@@ -21,6 +21,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraftforge.client.event.InputEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
@@ -33,7 +34,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayDeque;
+import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
 
 import static org.apache.commons.lang3.math.NumberUtils.min;
 
@@ -106,6 +109,24 @@ public class EventHandler {
 
         if(bountiful_harvest.DURATION== 0){
             bountiful_harvest_runtime.push(bountiful_harvest.startPos);
+            event.player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 2*bountiful_harvest.MAX_DURATION- bountiful_harvest.DURATION, 1));
+            event.player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 2*bountiful_harvest.MAX_DURATION- bountiful_harvest.DURATION, 1));
+            utils.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 2*bountiful_harvest.MAX_DURATION- bountiful_harvest.DURATION, 1),bountiful_harvest.world,bountiful_harvest.startPos);
+            utils.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 2*bountiful_harvest.MAX_DURATION- bountiful_harvest.DURATION, 1),bountiful_harvest.world,bountiful_harvest.startPos);
+        }
+
+        if(bountiful_harvest.DURATION%40== 0){
+            List<LivingEntity> entities=utils.getAllCreatures(bountiful_harvest.world,event.player,10D);
+            List<LivingEntity> lowestHealthEntities = entities.stream()
+                    .sorted(Comparator.comparingDouble(entity -> entity.getHealth() / entity.getMaxHealth()))
+                    .limit(2)
+                    .toList();
+
+            // 为这两个实体回血
+            for (LivingEntity entity : lowestHealthEntities) {
+                if(entity==null || !entity.isAlive()) continue;
+                entity.addEffect(new MobEffectInstance(MobEffects.HEAL, 1, 2));
+            }
         }
 
         int i = 0;
@@ -116,6 +137,8 @@ public class EventHandler {
                 if(bountiful_harvest_runtime.exploredOperate(v)!=bountiful_harvest_runtime.operate.no) continue;
                 bountiful_harvest_runtime.expandPos(bountiful_harvest.world,v);
                 bountiful_harvest_runtime.push(v);
+                utils.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 2*bountiful_harvest.MAX_DURATION- bountiful_harvest.DURATION, 1),bountiful_harvest.world,v);
+                utils.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 2*bountiful_harvest.MAX_DURATION- bountiful_harvest.DURATION, 1),bountiful_harvest.world,v);
             }
             i++;
         }
@@ -128,7 +151,8 @@ public class EventHandler {
                     continue;
                 }
                 if(bountiful_harvest_runtime.exploredOperate(block)==bountiful_harvest_runtime.operate.wood){
-                    if(utils.isFarmlandBound(bountiful_harvest.world,block)) bountiful_harvest.world.setBlock(block, Blocks.OAK_LOG.defaultBlockState(),3);
+                    // if(utils.isFarmlandBound(bountiful_harvest.world,block)) bountiful_harvest.world.setBlock(block, Blocks.OAK_LOG.defaultBlockState(),3);
+                    bountiful_harvest.world.setBlock(block, Blocks.OAK_LOG.defaultBlockState(),3);
                     bountiful_harvest_runtime.markOperated(block);
                     continue;
                 }
@@ -173,8 +197,10 @@ public class EventHandler {
         utils.getAllSaplings();
         samsara.SP= samsara.INITIAL_SP;
         samsara.DURATION= samsara.MAX_DURATION;
+        samsara.CHARGES=0;
         bountiful_harvest.SP= bountiful_harvest.INITIAL_SP;
         bountiful_harvest.DURATION= bountiful_harvest.MAX_DURATION;
+        bountiful_harvest.CHARGES=0;
     }
 
     @SubscribeEvent
@@ -183,24 +209,28 @@ public class EventHandler {
 
         // 检查玩家是否首次进入世界
         if (!player.getPersistentData().getBoolean("hasReceivedYucong")) {
-            // 给玩家一个玉虫（示例使用了金苹果）
-            ItemStack yucong = shuarknights.YU_CONG.get().getDefaultInstance(); // 替换为玉虫的物品
-
+            ItemStack yucong = shuarknights.YU_CONG.get().getDefaultInstance();
             player.addItem(yucong);
-            player.getPersistentData().putBoolean("hasReceivedYucong", true); // 标记为已给予
+            player.getPersistentData().putBoolean("hasReceivedYucong", true);
         }
     }
 
-    @SubscribeEvent
-    public void onEntityUpdate(LivingDeathEvent event) {
-        if(event.getEntity() instanceof Player player){
-            for(var itemstack:player.getInventory().items){
-                if(itemstack.is(shuarknights.YU_CONG.get())){
-                    break;
-                }
-            }
-        }
+//    @SubscribeEvent
+//    public void onEntityUpdate(LivingDeathEvent event) {
+//        if(event.getEntity() instanceof Player player){
+//            for(var itemstack:player.getInventory().items){
+//                if(itemstack.is(shuarknights.YU_CONG.get())){
+//                    break;
+//                }
+//            }
+//        }
+//
+//    }
 
-    }
+//    @SubscribeEvent
+//    public void onLeftClick(InputEvent.MouseButton event) {
+//
+//
+//    }
 
 }
