@@ -1,5 +1,7 @@
 package com.hsiatein.shuarknights;
 
+import com.hsiatein.shuarknights.runtime.samsara_runtime;
+import com.hsiatein.shuarknights.runtime.bountiful_harvest_runtime;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
@@ -64,26 +66,26 @@ public class utils {
 
         int i = 0;
         while(i<MAX_EXPAND_TIMES && !openList.isEmpty()){
-            Logger.log("expand:"+i);
+            // Logger.log("expand:"+i);
             BlockPos u= openList.pop();
             closeList.add(u);
             ArrayDeque<BlockPos> neighbors = getNeighbors(world, u);
             Logger.log(String.valueOf(neighbors.size()));
             for(BlockPos v:neighbors){
                 if(closeList.contains(v)) continue;
-                Logger.log("refineBlock:");
+                // Logger.log("refineBlock:");
                 refineBlock(world,v);
-                Logger.log("getAllCreatures:");
+                // Logger.log("getAllCreatures:");
                 var blockCreatures=getAllCreatures(world, v);
-                Logger.log("addCreatures:");
+                // Logger.log("addCreatures:");
                 creatureSet.addAll(blockCreatures);
-                Logger.log("creatureSet:");
-                Logger.log(String.valueOf(creatureSet.size()));
-                Logger.log(creatureSet.toString());
+                // Logger.log("creatureSet:");
+                // Logger.log(String.valueOf(creatureSet.size()));
+                // Logger.log(creatureSet.toString());
                 openList.addLast(v);
-                Logger.log("openList:");
-                Logger.log(String.valueOf(openList.size()));
-                Logger.log(openList.toString());
+                // Logger.log("openList:");
+                // Logger.log(String.valueOf(openList.size()));
+                // Logger.log(openList.toString());
             }
             i++;
         }
@@ -288,14 +290,23 @@ public class utils {
     }
     public static boolean isValidFarmland(@NotNull Level world,BlockPos pos){
         if(!world.getBlockState(pos).is(BlockTags.DIRT)) return false;
-        return world.getBlockState(pos.above()).isAir();
+        if(world.getBlockState(pos.above()).is(BlockTags.CROPS)) return true;
+        return !canTransmit(world, pos.above());
     }
 
     public static boolean isBound(@NotNull Level world,BlockPos pos){
         if(!canTransmit(world,pos)) throw new RuntimeException("这里是非实体方块");
-        ArrayDeque<BlockPos> neighbors = getNeighbors6(pos);
+        ArrayDeque<BlockPos> neighbors = getNeighbors4(pos);
         for(BlockPos neighbor:neighbors){
             if(!canTransmit(world,neighbor)) return true;
+        }
+        return false;
+    }
+    public static boolean isFarmlandBound(@NotNull Level world,BlockPos pos){
+        if(!isBound(world, pos)) throw new RuntimeException("这里不是边界");
+        ArrayDeque<BlockPos> neighbors = getNeighbors8(pos);
+        for(BlockPos neighbor:neighbors){
+            if(bountiful_harvest_runtime.exploredOperate(neighbor)==bountiful_harvest_runtime.operate.farmland) return true;
         }
         return false;
     }

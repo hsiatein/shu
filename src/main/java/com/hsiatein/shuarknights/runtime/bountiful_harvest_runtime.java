@@ -1,10 +1,9 @@
-package com.hsiatein.shuarknights;
+package com.hsiatein.shuarknights.runtime;
 
+import com.hsiatein.shuarknights.utils;
 import net.minecraft.core.BlockPos;
-import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayDeque;
@@ -57,6 +56,8 @@ public class bountiful_harvest_runtime {
         ArrayDeque<BlockPos> result = new ArrayDeque<>();
         ArrayDeque<BlockPos> neighbors = utils.getNeighbors26(pos);
         for(BlockPos neighbor:neighbors){
+            var state=world.getBlockState(neighbor);
+            if(state.is(BlockTags.LEAVES)) continue;
             if(isValidSuccessor(world,neighbor)) result.addLast(neighbor);
         }
         return result;

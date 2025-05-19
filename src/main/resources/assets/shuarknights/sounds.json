@@ -1,0 +1,26 @@
+{
+  "plant_in_soil": {
+    "sounds": [
+      {
+        "name": "shuarknights:plant_in_soil",
+        "stream": true
+      }
+    ]
+  },
+  "change_weather": {
+    "sounds": [
+      {
+        "name": "shuarknights:change_weather",
+        "stream": true
+      }
+    ]
+  },
+  "samsara": {
+    "sounds": [
+      {
+        "name": "shuarknights:samsara",
+        "stream": true
+      }
+    ]
+  }
+}

@@ -7,6 +7,8 @@ import com.hsiatein.shuarknights.network.ModMessages;
 import com.mojang.logging.LogUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTab;
@@ -33,6 +35,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import org.slf4j.Logger;
 import com.hsiatein.shuarknights.item.yucong;
+import net.minecraft.sounds.SoundEvent;
 
 // The value here should match an entry in the META-INF/mods.toml file
 @Mod(shuarknights.MODID)
@@ -67,6 +70,14 @@ public class shuarknights
                 output.accept(YU_CONG.get()); // Add the example item to the tab. For your own tabs, this method is preferred over the event
             }).build());
 
+    public static final DeferredRegister<SoundEvent> SOUND_EVENTS = DeferredRegister.create(ForgeRegistries.SOUND_EVENTS, MODID);
+    public static final RegistryObject<SoundEvent> PLANT_IN_SOIL_SOUND=SOUND_EVENTS.register("shu_plant_in_soil_sound",
+            ()->SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(MODID,"plant_in_soil")));
+    public static final RegistryObject<SoundEvent> SAMSARA_SOUND=SOUND_EVENTS.register("shu_samsara_sound",
+            ()->SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(MODID,"samsara")));
+    public static final RegistryObject<SoundEvent> CHANGE_WEATHER_SOUND=SOUND_EVENTS.register("shu_change_weather_sound",
+            ()->SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(MODID,"change_weather")));
+
     public shuarknights(FMLJavaModLoadingContext context)
     {
 
@@ -81,6 +92,8 @@ public class shuarknights
         ITEMS.register(modEventBus);
         // Register the Deferred Register to the mod event bus so tabs get registered
         CREATIVE_MODE_TABS.register(modEventBus);
+
+        SOUND_EVENTS.register(modEventBus);
 
         // Register ourselves for server and other game events we are interested in
         MinecraftForge.EVENT_BUS.register(this);

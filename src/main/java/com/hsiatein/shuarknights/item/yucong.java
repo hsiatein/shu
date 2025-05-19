@@ -1,15 +1,19 @@
 package com.hsiatein.shuarknights.item;
 
 import com.hsiatein.shuarknights.hud.samsara;
+import com.hsiatein.shuarknights.shuarknights;
+import com.hsiatein.shuarknights.hud.bountiful_harvest;
 import com.hsiatein.shuarknights.utils;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.item.*;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.effect.MobEffects;
@@ -18,6 +22,8 @@ import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.level.Level;
 
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.client.event.sound.SoundEvent;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -30,7 +36,6 @@ public class yucong extends SwordItem {
     public static final int MAX_CHARGE_DURATION = 100;
     private static final int MAX_EXPAND_TIMES = 200;
     private static final int START_TICK = 10;
-
 
 
     public yucong(Properties properties) {
@@ -68,6 +73,17 @@ public class yucong extends SwordItem {
     {
         if(samsara.DURATION<samsara.MAX_DURATION){
             player.addEffect(new MobEffectInstance(MobEffects.HEAL, 1, 1));
+        }
+        if(bountiful_harvest.DURATION<bountiful_harvest.MAX_DURATION){
+            if(entity instanceof Mob e){
+//                e.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 200, 255));
+//                e.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 200, 255));
+                e.setNoAi(true);
+                Vec3 newPos=new Vec3(e.position().x,e.position().y-e.getEyeHeight(),e.position().z);
+                e.setPos(newPos);
+                player.playSound(shuarknights.PLANT_IN_SOIL_SOUND.get());
+                return true;
+            }
         }
         return false;
     }
@@ -126,6 +142,21 @@ public class yucong extends SwordItem {
             samsara.world=world;
             samsara.CHARGES--;
             samsara.DURATION=0;
+            player.playSound(shuarknights.SAMSARA_SOUND.get());
+        }
+        if(!world.isClientSide && !player.isShiftKeyDown()){
+            if(useDuration< START_TICK){
+                // player.addEffect(new MobEffectInstance(MobEffects.HEAL, 1, 1));
+                return;
+            }
+            if(bountiful_harvest.CHARGES<=0) return;
+            bountiful_harvest.startPos=player.blockPosition();
+            while (!utils.canTransmit(world,bountiful_harvest.startPos) && bountiful_harvest.startPos.getY()>-64){
+                bountiful_harvest.startPos=bountiful_harvest.startPos.below();
+            }
+            bountiful_harvest.world=world;
+            bountiful_harvest.CHARGES--;
+            bountiful_harvest.DURATION=0;
         }
     }
 

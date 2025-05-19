@@ -30,7 +30,7 @@ public class bountiful_harvest implements IGuiOverlay  {
     public static final int MAX_DURATION = 25*20;
 
     public static int DURATION = MAX_DURATION;
-    public static final int MAX_EXPAND_TIMES = 200;
+    public static final int MAX_EXPAND_TIMES = 50;
     public static BlockPos startPos = null;
     public static Level world=null;
 
@@ -60,13 +60,25 @@ public class bountiful_harvest implements IGuiOverlay  {
         // 绘制图标
         guiGraphics.blit(ICON, iconX, iconY, 0, 0, 32, 32, 32, 32);
 
-        // 计算蒙版高度
-        int maxWisdom = MAX_SP*20;
-        int maskHeight = (int) (32 * (1 - (SP / (float) maxWisdom)));
+        if(DURATION>=MAX_DURATION){
+            // 计算蒙版高度
+            int maxWisdom = MAX_SP*20;
+            int maskHeight = (int) (32 * (1 - (SP / (float) maxWisdom)));
 
-        // 绘制绿色半透明蒙版
-        if (maskHeight < 32) {
-            guiGraphics.fill(iconX, iconY + maskHeight, iconX + 32, iconY + 32, 0x8000FF00);
+            // 绘制绿色半透明蒙版
+            if (maskHeight < 32) {
+                guiGraphics.fill(iconX, iconY + maskHeight, iconX + 32, iconY + 32, 0x8000FF00);
+            }
+        }
+        else {
+            // 计算蒙版高度
+            int maxWisdom = MAX_DURATION;
+            int maskHeight = (int) (32 * (DURATION / (float) maxWisdom));
+
+            // 绘制橙色半透明蒙版
+            if (maskHeight < 32) {
+                guiGraphics.fill(iconX, iconY + maskHeight, iconX + 32, iconY + 32, 0x80FFA900);
+            }
         }
 
         if(CHARGES <1 || MAX_CHARGE==1) return;

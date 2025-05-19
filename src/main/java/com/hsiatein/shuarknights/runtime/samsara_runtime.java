@@ -1,5 +1,6 @@
-package com.hsiatein.shuarknights;
+package com.hsiatein.shuarknights.runtime;
 
+import com.hsiatein.shuarknights.utils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.LivingEntity;
@@ -21,7 +22,7 @@ public class samsara_runtime {
         openList.addLast(pos);
     }
     public static void pushCreature(Level world, BlockPos pos){
-        var entities=utils.getAllCreatures(world,pos);
+        var entities= utils.getAllCreatures(world,pos);
         for(var e:entities){
             if(!creatureMap.containsKey(e)) creatureMap.put(e,0);
         }
